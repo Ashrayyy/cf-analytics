@@ -67,14 +67,6 @@ chrome.runtime.sendMessage({todo:"appendHTML"},function(response){
     if (date_max != -1) $("#dateMaxSpan").text(timeToDate(date_max));
    
     const profileId = getProfileIdFromUrl(window.location.href);
-    $.get(`https://cf-cheat-detect.vercel.app/api/stringRoutes/search-object/userName/${profileId}`,function(data){
-      if(data.offenses>0){
-        console.log("Cheater");
-      }
-      else{
-        console.log("Not a Cheater")
-      }
-    });
     $.get(`https://codeforces.com/api/contest.list?gym=false`,function(data){
       if(data.status == "OK"){
         processContestDurations(data.result);
