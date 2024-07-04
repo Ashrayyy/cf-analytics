@@ -1,4 +1,9 @@
 <!-- Problem Rating -->
+ <div class="centered-container">
+    <button id="logValuesEnable" class="nice-button">
+        Toggle Logarithmic Scale
+    </button>
+ </div>
 <div class="roundbox " style="padding:2em 1em 0 1em;margin-top:1em;" height="10">
     <div class="roundbox-lt">&nbsp;</div>
     <div class="roundbox-rt">&nbsp;</div>
@@ -25,6 +30,81 @@
     <div>
         <canvas id="problemRatingChart"></canvas>
     </div>
+</div>
+<div class="roundbox " style="padding:2em 1em 0 1em;margin-top:1em;" height="10">
+    <div class="roundbox-lt">&nbsp;</div>
+    <div class="roundbox-rt">&nbsp;</div>
+    <div class="roundbox-lb">&nbsp;</div>
+    <div class="roundbox-rb">&nbsp;</div>
+    <h4>
+        Problems Solved During Contest
+    </h4>
+    <ul>
+        <li id="dateLi" style="display:none">
+            from
+            <span id="dateMinSpan">oldest</span>
+            to
+            <span id="dateMaxSpan">newest</span>
+        </li>
+
+        <li id="ratingLi" style="display:none">
+            from
+            <span id="ratingMinSpan">min</span>
+            to
+            <span id="ratingMaxSpan">max</span>
+        </li>
+    </ul>
+    <div>
+        <canvas id="solvedProblemRatingChart"></canvas>
+    </div>
+</div>
+<div class="roundbox " style="padding:2em 1em 0 1em;margin-top:1em;" height="10">
+    <div class="roundbox-lt">&nbsp;</div>
+    <div class="roundbox-rt">&nbsp;</div>
+    <div class="roundbox-lb">&nbsp;</div>
+    <div class="roundbox-rb">&nbsp;</div>
+    <h4>
+        Problems Upsolved
+    </h4>
+    <ul>
+        <li id="dateLi" style="display:none">
+            from
+            <span id="dateMinSpan">oldest</span>
+            to
+            <span id="dateMaxSpan">newest</span>
+        </li>
+
+        <li id="ratingLi" style="display:none">
+            from
+            <span id="ratingMinSpan">min</span>
+            to
+            <span id="ratingMaxSpan">max</span>
+        </li>
+    </ul>
+    <div>
+        <canvas id="upsolvedProblemRatingChart"></canvas>
+    </div>
+</div>
+
+<div class="roundbox " style="padding:2em 1em 0 1em;margin-top:1em;" height="10">
+    <div class="roundbox-lt">&nbsp;</div>
+    <div class="roundbox-rt">&nbsp;</div>
+    <div class="roundbox-lb">&nbsp;</div>
+    <div class="roundbox-rb">&nbsp;</div>
+    <h4>
+        Problems Solved by Rating:
+    </h4>
+    <h6>
+        Click on the respective bar graph to view solved questions by rating.
+    </h6>
+    <br>
+    <h6 id="selected_rating">
+        Rating Selected : None
+    </h6>
+    <br>
+    <br>
+    <p id="solved_list"></p>
+    <br>
 </div>
 <!-- Tags Solved-->
 <div class="roundbox " style="padding:2em 1em 0 1em;margin-top:1em;" height="10">

@@ -2,3 +2,55 @@
     background-color: transparent;
     text-decoration: none;
 }
+.centered-container {
+    display: flex;
+    justify-content: center; /* Horizontally center items */
+    align-items: center; /* Vertically center items */
+  }
+/* Basic styling for the button */
+.nice-button {
+    background-color: #4CAF50; /* Green background */
+    border: none; /* No border */
+    color: white; /* White text */
+    padding: 10px 20px; /* Padding inside the button */
+    align-items: center;
+    text-align: center; /* Center text */
+    text-decoration: none; /* No underline on text */
+    display: inline-block; /* Display as a block element */
+    font-size: 16px; /* Font size */
+    margin: 4px 2px; /* Margin */
+    cursor: pointer; /* Cursor pointer on hover */
+    border-radius: 8px; /* Rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Shadow effect */
+    transition: background-color 0.3s, color 0.3s, transform 0.3s; /* Smooth transitions */
+  }
+  
+  /* Hover effect for flames */
+  .nice-button:hover {
+    background-color: #FF5722; /* Orange background on hover */
+    color: white; /* White text on hover */
+    transform: scale(1.05); /* Scale up on hover */
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* Increased shadow on hover */
+  }
+  
+  /* Explosion animation */
+  @keyframes explodeAnimation {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.5);
+      opacity: 0.5;
+    }
+    100% {
+      transform: scale(2);
+      opacity: 0;
+    }
+  }
+  
+  /* Explosion effect when clicked */
+  .explode {
+    animation: explodeAnimation 1s ease-out forwards;
+  }
+  

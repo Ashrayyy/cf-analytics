@@ -1,5 +1,10 @@
 var problems = new Map();
 var ratings = new Map();
+var ratedSolvedProblems = new Map();
+var ratedUpsolvedProblems = new Map();
+var problemsSolvedInContest = new Map();
+var problemsUpsolved = new Map();
+var contestDurations = new Map();
 var tags = new Map();
 var ratingChartLabel = [];
 var ratingChartData = [];
@@ -10,6 +15,10 @@ var rating_min = -1;
 var rating_max = -1;
 var date_min = -1;
 var date_max = -1;
+var logEnabled = false;
+let problemRatingChart = null;
+let solvedProblemRatingChart = null;
+let upSolvedProblemRatingChart = null;
 
 chrome.storage.sync.get(["ratingMin", "ratingMax", "dateMin", "dateMax", "useRatingMin", "useRatingMax", "useDateMin", "useDateMax"], data => {
   if (data.ratingMin != "undefined" && data.useRatingMin) rating_min = data.ratingMin;
@@ -58,11 +67,31 @@ chrome.runtime.sendMessage({todo:"appendHTML"},function(response){
     if (date_max != -1) $("#dateMaxSpan").text(timeToDate(date_max));
    
     const profileId = getProfileIdFromUrl(window.location.href);
+    $.get(`https://cf-cheat-detect.vercel.app/api/stringRoutes/search-object/userName/${profileId}`,function(data){
+      if(data.offenses>0){
+        console.log("Cheater");
+      }
+      else{
+        console.log("Not a Cheater")
+      }
+    });
+    $.get(`https://codeforces.com/api/contest.list?gym=false`,function(data){
+      if(data.status == "OK"){
+        processContestDurations(data.result);
+      }else{
+        //response not loaded
+        console.error(data.status + ' : ' + data.comment);
+      }
+    })
+    setUpListeners();
     $.get(`https://codeforces.com/api/user.status?handle=${profileId}`,function(data){
       if(data.status == "OK"){
         //processdata
+        
         processData(data.result);
         createProblemRatingChart();
+        createSolvedProblemRatingChart();
+        createUpsolvedProblemRatingChart();
         createTagChart();
       }else{
         //response not loaded
@@ -70,6 +99,22 @@ chrome.runtime.sendMessage({todo:"appendHTML"},function(response){
       }
     })
 });
+function setUpListeners(){
+  var btn = document.getElementById('logValuesEnable');
+  btn.addEventListener('click',function(){
+    logEnabled=!logEnabled;
+    createProblemRatingChart(logEnabled);
+    createSolvedProblemRatingChart(logEnabled);
+    createUpsolvedProblemRatingChart(logEnabled);
+  })
+}
+function processContestDurations(result){
+  for(var i = 0; i<result.length;i++){
+    var contestObject = result[i];
+    contestDurations.set(contestObject.id,contestObject.durationSeconds);
+  }
+
+}
 function getProfileIdFromUrl(url){
   var arr = url.split("/");
   var temp = arr.slice(-1);
@@ -79,7 +124,28 @@ function getProfileIdFromUrl(url){
 function processData(resultArr){
   for(var i = resultArr.length-1;i>=0;i--){
     var sub = resultArr[i];
+    
     var problemId = sub.problem.contestId+'-'+sub.problem.index;
+    var contestCode = sub.problem.contestId;
+    if(sub.verdict=="OK" && sub.problem.rating!=undefined){
+      if(sub.relativeTimeSeconds>contestDurations.get(contestCode)){
+        if(!problemsUpsolved.has(problemId)){
+          problemsUpsolved.set(problemId,{
+            rating : sub.problem.rating,
+            contestId: sub.problem.contestId
+          })
+        }
+      }
+      else{
+        if(!problemsSolvedInContest.has(problemId)){
+          problemsSolvedInContest.set(problemId,{
+            rating : sub.problem.rating,
+            contestId: sub.problem.contestId
+          })
+        }
+      }
+    }
+
     if(!problems.has(problemId)){
       problems.set(problemId,{
         solved: false,
@@ -105,6 +171,29 @@ function processData(resultArr){
     
       problems.set(problemId,obj);
   }
+  
+  problemsSolvedInContest.forEach((v,k)=>{
+    if(!ratedSolvedProblems.has(v.rating)){
+      var bro = [k];
+      ratedSolvedProblems.set(v.rating,bro);
+    }
+    else{
+      ratedSolvedProblems.get(v.rating).push(k);
+    }
+  });
+  
+  problemsUpsolved.forEach((v,k)=>{
+    if(ratedSolvedProblems.has(v.rating) && ratedSolvedProblems.get(v.rating).findIndex(element => element === k)==-1){
+      if(!ratedUpsolvedProblems.has(v.rating)){
+        var bro = [k];
+        ratedUpsolvedProblems.set(v.rating,bro);
+      }
+      else{
+        ratedUpsolvedProblems.get(v.rating).push(k);
+      }
+    }
+  });
+
   let unsolvedCount = 0;
   problems.forEach(function(prob){
     if (prob.use){
@@ -156,9 +245,16 @@ function findProblemURL(contestId,index){
     return `https://codeforces.com/problemset/gymProblem/${contestId}/${index}`;
   }
 }
-function createProblemRatingChart(){
+function createProblemRatingChart(logEnable = false){
+  if(problemRatingChart!=null){
+    problemRatingChart.destroy();
+  }
+  var type = 'linear';
+  if(logEnable){
+    type = 'logarithmic';
+  }
   var ctx = document.getElementById('problemRatingChart').getContext('2d');
-  var myChart = new Chart(ctx, {
+  problemRatingChart = new Chart(ctx, {
       type: 'bar',
       data: {
           labels: ratingChartLabel,
@@ -180,6 +276,7 @@ function createProblemRatingChart(){
               }
             },
             y: {
+                type:type,
                 title:{
                   text: 'Problems Solved',
                   display: false,
@@ -191,8 +288,126 @@ function createProblemRatingChart(){
             if (legendItem.length > 0) {
                 const ratingChartIndex = legendItem[0].index;
                 const ratingLevel = ratingChartLabel[ratingChartIndex];
-                const url = `https://codeforces.com/problemset?tags=${ratingLevel}-${ratingLevel}`;
-                window.location.href = url;
+                generateRatedQuestions(ratingLevel);
+            }
+          }
+      }
+  });
+}
+function createSolvedProblemRatingChart(logEnable=false){
+  if(solvedProblemRatingChart!=null){
+    solvedProblemRatingChart.destroy();
+  }
+  var ctx = document.getElementById('solvedProblemRatingChart').getContext('2d');
+  var ratingChartData = [];
+  var ratingChartBackgroundColor = [];
+  var ratingChartLabel = [];
+
+  sortedRatedSolvedProblems = new Map([...ratedSolvedProblems.entries()].sort((a,b)=> a[0] - b[0]));
+
+  sortedRatedSolvedProblems.forEach((v,k)=>{
+    ratingChartLabel.push(k);
+    ratingChartData.push(v.length);
+    ratingChartBackgroundColor.push(ratingBackgroundColor(k));
+  });
+  var type = 'linear';
+  if(logEnable){
+    type = 'logarithmic';
+  }
+  solvedProblemRatingChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+          labels: ratingChartLabel,
+          datasets: [{
+              label: 'Problems Solved',
+              data: ratingChartData,
+              backgroundColor: ratingChartBackgroundColor,
+              borderColor: 'rgba(0  ,0  ,0  ,1)',//ratingChartBorderColor,
+              borderWidth: 0.75,
+          }]
+      },
+      options: {
+          aspectRatio : 2.5,
+          scales: {
+            x: {
+              title:{
+                text: 'Problem Rating',
+                display: false,
+              }
+            },
+            y: {
+                type:type,
+                title:{
+                  text: 'Problems Solved During Contest',
+                  display: false,
+                },
+                beginAtZero: true
+            }
+          },
+          onClick: function (event, legendItem) {
+            if (legendItem.length > 0) {
+                const ratingChartIndex = legendItem[0].index;
+                const ratingLevel = ratingChartLabel[ratingChartIndex];
+                generateRatedSolvedQuestions(ratingLevel);
+            }
+          }
+      }
+  });
+}
+function createUpsolvedProblemRatingChart(logEnable = false){
+  if(upSolvedProblemRatingChart!=null){
+    upSolvedProblemRatingChart.destroy();
+  }
+  var ctx = document.getElementById('upsolvedProblemRatingChart').getContext('2d');
+  var ratingChartData = [];
+  var ratingChartBackgroundColor = [];
+  var ratingChartLabel = [];
+
+  sortedRatedUpsolvedProblems = new Map([...ratedUpsolvedProblems.entries()].sort((a,b)=> a[0] - b[0]));
+  sortedRatedUpsolvedProblems.forEach((v,k)=>{
+    ratingChartLabel.push(k);
+    ratingChartData.push(v.length);
+    ratingChartBackgroundColor.push(ratingBackgroundColor(k));
+  });
+  var type = 'linear';
+  if(logEnable){
+    type = 'logarithmic';
+  }
+  upSolvedProblemRatingChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+          labels: ratingChartLabel,
+          datasets: [{
+              label: 'Problems Solved',
+              data: ratingChartData,
+              backgroundColor: ratingChartBackgroundColor,
+              borderColor: 'rgba(0  ,0  ,0  ,1)',//ratingChartBorderColor,
+              borderWidth: 0.75,
+          }]
+      },
+      options: {
+          aspectRatio : 2.5,
+          scales: {
+            x: {
+              title:{
+                text: 'Problem Rating',
+                display: false,
+              }
+            },
+            y: {
+                type : type,
+                title:{
+                  text: 'Problems Solved',
+                  display: false,
+                },
+                beginAtZero: true
+            }
+          },
+          onClick: function (event, legendItem) {
+            if (legendItem.length > 0) {
+                const ratingChartIndex = legendItem[0].index;
+                const ratingLevel = ratingChartLabel[ratingChartIndex];
+                generateRatedUpsolvedQuestions(ratingLevel);
             }
           }
       }
@@ -296,4 +511,64 @@ function ratingSpanColor(rating){
     return green;
   else
     return gray; 
+}
+function generateRatedQuestions(rating = 0){
+  $('#selected_rating').html(`Current Rating Selected: ${rating} (all)`);
+  $('#solved_list').empty();
+  if(ratedSolvedProblems.has(rating)){
+    ratedSolvedProblems.get(rating).forEach((it)=>{
+      var details = it.split('-');
+      var problemURL = findProblemURL(details[0],details[1]);
+      $('#solved_list').append(`
+        <a class="unsolved_problem" href="${problemURL}">
+          ${details[0]}-${details[1]}
+        </a>
+      `);
+      $('#solved_list').append("     ");
+    });
+  }
+  if(ratedUpsolvedProblems.has(rating)){
+    ratedUpsolvedProblems.get(rating).forEach((it)=>{
+      var details = it.split('-');
+      var problemURL = findProblemURL(details[0],details[1]);
+      $('#solved_list').append(`
+        <a class="unsolved_problem" href="${problemURL}">
+          ${details[0]}-${details[1]}
+        </a>
+      `);
+      $('#solved_list').append("     ");
+    }); 
+  }
+}
+function generateRatedSolvedQuestions(rating = 0){
+  $('#selected_rating').html(`Current Rating Selected: ${rating} (during contest)`);
+  $('#solved_list').empty();
+  if(ratedSolvedProblems.has(rating)){
+    ratedSolvedProblems.get(rating).forEach((it)=>{
+      var details = it.split('-');
+      var problemURL = findProblemURL(details[0],details[1]);
+      $('#solved_list').append(`
+        <a class="unsolved_problem" href="${problemURL}">
+          ${details[0]}-${details[1]}
+        </a>
+      `);
+      $('#solved_list').append("     ");
+    });
+  }
+}
+function generateRatedUpsolvedQuestions(rating = 0){
+  $('#selected_rating').html(`Current Rating Selected: ${rating} (upsolved)`);
+  $('#solved_list').empty();
+  if(ratedUpsolvedProblems.has(rating)){
+    ratedUpsolvedProblems.get(rating).forEach((it)=>{
+      var details = it.split('-');
+      var problemURL = findProblemURL(details[0],details[1]);
+      $('#solved_list').append(`
+        <a class="unsolved_problem" href="${problemURL}">
+          ${details[0]}-${details[1]}
+        </a>
+      `);
+      $('#solved_list').append("     ");
+    }); 
+  }
 }
