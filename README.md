@@ -5,6 +5,8 @@ CF Analytics extension/add-on improves the Codeforces profile webpage to include
 [ApoorvaRajBhadani/cf-analytics](https://github.com/ApoorvaRajBhadani/cf-analytics)
 
 ## My Fork
+##### [Video Tutorial for installation](https://drive.google.com/file/d/1XRtMr9Y9VwaVi_YAidWEVOce8gcpHbnK/view?usp=sharing)
+
 Along with the original features. I have added some new features, that i personally wanted and I hope people might like it too.
 ### More Tables
 <table>
