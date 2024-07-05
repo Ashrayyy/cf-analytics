@@ -120,6 +120,7 @@ function processData(resultArr){
     var problemId = sub.problem.contestId+'-'+sub.problem.index;
     var contestCode = sub.problem.contestId;
     if(sub.verdict=="OK" && sub.problem.rating!=undefined){
+      console.log(`${problemId} ${sub.relativeTimeSeconds} ${contestDurations.get(contestCode)}`)
       if(sub.relativeTimeSeconds>contestDurations.get(contestCode)){
         if(!problemsUpsolved.has(problemId)){
           problemsUpsolved.set(problemId,{
