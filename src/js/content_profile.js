@@ -70,26 +70,26 @@ chrome.runtime.sendMessage({todo:"appendHTML"},function(response){
     $.get(`https://codeforces.com/api/contest.list?gym=false`,function(data){
       if(data.status == "OK"){
         processContestDurations(data.result);
+        $.get(`https://codeforces.com/api/user.status?handle=${profileId}`,function(data){
+          
+          if(data.status == "OK"){
+            processData(data.result);
+            createProblemRatingChart();
+            createSolvedProblemRatingChart();
+            createUpsolvedProblemRatingChart();
+            createTagChart();
+          }else{
+            //response not loaded
+            console.error(data.status + ' : ' + data.comment);
+          }
+        })
       }else{
         //response not loaded
         console.error(data.status + ' : ' + data.comment);
       }
     })
     setUpListeners();
-    $.get(`https://codeforces.com/api/user.status?handle=${profileId}`,function(data){
-      if(data.status == "OK"){
-        //processdata
-        
-        processData(data.result);
-        createProblemRatingChart();
-        createSolvedProblemRatingChart();
-        createUpsolvedProblemRatingChart();
-        createTagChart();
-      }else{
-        //response not loaded
-        console.error(data.status + ' : ' + data.comment);
-      }
-    })
+    
 });
 function setUpListeners(){
   var btn = document.getElementById('logValuesEnable');
@@ -125,7 +125,7 @@ function processData(resultArr){
           problemsUpsolved.set(problemId,{
             rating : sub.problem.rating,
             contestId: sub.problem.contestId
-          })
+          });
         }
       }
       else{
@@ -175,7 +175,7 @@ function processData(resultArr){
   });
   
   problemsUpsolved.forEach((v,k)=>{
-    if(ratedSolvedProblems.has(v.rating) && ratedSolvedProblems.get(v.rating).findIndex(element => element === k)==-1){
+    if(!ratedSolvedProblems.has(v.rating) || ratedSolvedProblems.get(v.rating).findIndex(element => element === k)==-1){
       if(!ratedUpsolvedProblems.has(v.rating)){
         var bro = [k];
         ratedUpsolvedProblems.set(v.rating,bro);
