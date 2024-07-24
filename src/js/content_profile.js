@@ -106,6 +106,8 @@ function processContestDurations(result){
     contestDurations.set(contestObject.id,contestObject.durationSeconds);
   }
 
+
+  
 }
 function getProfileIdFromUrl(url){
   var arr = url.split("/");
